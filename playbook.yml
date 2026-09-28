@@ -1,0 +1,80 @@
+---
+- name: Install and configure nginx with custom [placeholder for anything] site
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Install nginx
+      ansible.builtin.package:
+        name: nginx
+        state: present
+        use: apt
+
+    - name: Create web root for [placeholder for anything]
+      ansible.builtin.file:
+        path: /var/www/[placeholder for anything]
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy index.html
+      ansible.builtin.copy:
+        dest: /var/www/[placeholder for anything]/index.html
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          <!DOCTYPE html>
+          <html>
+            <head><title>placeholder</title></head>
+            <body><h1>Hello from [placeholder for anything]</h1></body>
+          </html>
+      notify: restart nginx
+
+    - name: Deploy custom [placeholder for anything].conf to sites-available
+      ansible.builtin.copy:
+        dest: /etc/nginx/sites-available/[placeholder for anything].conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          server {
+              listen 80;
+              listen [::]:80;
+              server_name _;
+
+              root /var/www/[placeholder for anything];
+              index index.html;
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+          }
+      notify: restart nginx
+
+    - name: Enable [placeholder for anything].conf via symlink in sites-enabled
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/[placeholder for anything].conf
+        dest: /etc/nginx/sites-enabled/[placeholder for anything].conf
+        state: link
+      notify: restart nginx
+
+    - name: Remove default site from sites-enabled
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: restart nginx
+
+    - name: Start and enable nginx
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+  handlers:
+    - name: restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
